@@ -1,3 +1,5 @@
+import asyncio
+
 import yaml
 from fastapi import FastAPI
 from yeelight import Bulb
@@ -6,15 +8,11 @@ app = FastAPI()
 
 file_path = "conf.yaml"
 
-with open(file_path) as file:
-    dictionary_data = yaml.safe_load(file)
-    ip_lamp = dictionary_data.get('ip_lamp')
-    flag = dictionary_data.get('flag_f.lux')
-
 
 @app.post("/room")
 async def room_light(ct, bri):
-    if flag:
+    lamp_data: dict = get_data_yaml()
+    if lamp_data.get('flag_f.lux'):
         ct = int(ct)
         bri = int(float(bri) * 100)
 
@@ -29,24 +27,34 @@ async def rgb_color(red: int, green: int, blue: int):
 
 @app.post("/set_lamp")
 async def set_lamp(ip_lump: str):
-    dictionary_data['ip_lamp'] = ip_lump
-    await set_data_yaml(dictionary_data)
+    lamp_data: dict = get_data_yaml()
+    lamp_data['ip_lamp'] = ip_lump
+    await set_data_yaml(lamp_data)
 
 
 @app.get("/get_flag")
 async def get_flag():
-    return dictionary_data.get('flag_f.lux')
+    lamp_data: dict = get_data_yaml()
+    return lamp_data.get('flag_f.lux')
 
 
 @app.post("/set_flag")
 async def set_flag():
-    dictionary_data['flag_f.lux'] = not(dictionary_data['flag_f.lux'])
-    await set_data_yaml(dictionary_data)
+    lamp_data: dict = get_data_yaml()
+    lamp_data['flag_f.lux'] = not (lamp_data['flag_f.lux'])
+    await set_data_yaml(lamp_data)
 
 
-async def set_data_yaml(data):
+async def set_data_yaml(lamp_data):
     with open(file_path, 'w') as file:
-        yaml.dump(data, file)
+        yaml.dump(lamp_data, file)
 
 
-bulb = Bulb(ip_lamp)
+def get_data_yaml():
+    with open(file_path) as file:
+        dictionary_data: dict = yaml.safe_load(file)
+    return dictionary_data
+
+
+data = get_data_yaml()
+bulb = Bulb(data.get('ip_lamp'))
